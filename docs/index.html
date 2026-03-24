@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Expense Tracker</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e0e0e0; background: #121212; }
+      a { color: #82b1ff; }
+      .card { background: #1e1e1e; border-color: #333; }
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    p { color: #666; margin-bottom: 2rem; }
+    @media (prefers-color-scheme: dark) { p { color: #999; } }
+    .card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      max-width: 400px;
+      width: 100%;
+    }
+    a {
+      display: block;
+      color: #1a73e8;
+      text-decoration: none;
+      font-size: 1.1rem;
+      padding: 0.75rem 0;
+    }
+    a:hover { text-decoration: underline; }
+    a + a { border-top: 1px solid #e0e0e0; }
+    @media (prefers-color-scheme: dark) { a + a { border-color: #333; } }
+  </style>
+</head>
+<body>
+
+<h1>Family Expense Tracker</h1>
+<p>Track expenses, income, and investments together as a family.</p>
+
+<div class="card">
+  <a href="privacy-policy.html">Privacy Policy</a>
+  <a href="terms.html">Terms of Service</a>
+</div>
+
+</body>
+</html>
