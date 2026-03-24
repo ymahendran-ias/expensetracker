@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "329599814176",
+    "project_id": "expense-tracker-cc8ed",
+    "storage_bucket": "expense-tracker-cc8ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329599814176:android:e73e41db4e28cc32994a45",
+        "android_client_info": {
+          "package_name": "com.truecube.expensetracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVp3BaFgF-lhwfBO-WU8sWHyJmCocOMF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
