@@ -36,6 +36,11 @@ migrate_working_dir/
 # Firebase config with real keys (use firebase_config.example.json as template)
 firebase_config.json
 
+# Android signing keys
+android/key.properties
+*.jks
+*.keystore
+
 # Symbolication related
 app.*.symbols
 
