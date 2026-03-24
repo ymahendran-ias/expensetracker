@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Deletion — Family Expense Tracker</title>
+  <style>
+    :root { color-scheme: light dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fff;
+      padding: 2rem 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e0e0e0; background: #121212; }
+      a { color: #82b1ff; }
+    }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; font-size: 0.875rem; margin-bottom: 2rem; }
+    @media (prefers-color-scheme: dark) { .subtitle { color: #999; } }
+    h2 { font-size: 1.125rem; margin: 1.75rem 0 0.5rem; }
+    p { margin-bottom: 1rem; }
+    ol, ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.5rem; }
+    .step-box {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      .step-box { background: #1e1e1e; border-color: #333; }
+    }
+    .step-box h3 { font-size: 1rem; margin-bottom: 0.75rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+    th { font-weight: 600; }
+    .deleted { color: #d32f2f; font-weight: 600; }
+    .retained { color: #f57c00; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .deleted { color: #ef5350; }
+      .retained { color: #ffb74d; }
+    }
+    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #ddd; font-size: 0.875rem; color: #666; }
+    @media (prefers-color-scheme: dark) { .footer { border-color: #333; color: #999; } }
+    a { color: #1a73e8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>Data Deletion Request</h1>
+<p class="subtitle">Family Expense Tracker by TrueCube</p>
+
+<p>Family Expense Tracker allows you to delete your account and all associated data directly from within the app. No need to contact us — you have full control.</p>
+
+<h2>How to Delete Your Data</h2>
+
+<div class="step-box">
+  <h3>Steps to delete your account and data:</h3>
+  <ol>
+    <li>Open <strong>Family Expense Tracker</strong> on your device</li>
+    <li>Tap the <strong>Family</strong> tab in the bottom navigation bar</li>
+    <li>Scroll down to the <strong>Account &amp; Privacy</strong> section</li>
+    <li>Tap <strong>Delete Account</strong></li>
+    <li>Read the warning and tap <strong>Continue</strong></li>
+    <li>Enter your password to confirm, then tap <strong>Delete My Account</strong></li>
+  </ol>
+  <p>Your account and data will be permanently deleted immediately.</p>
+</div>
+
+<h2>What Data Is Deleted</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Data Type</th>
+      <th>What Happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>User profile (email, display name)</td>
+      <td><span class="deleted">Permanently deleted</span></td>
+    </tr>
+    <tr>
+      <td>Authentication credentials (password)</td>
+      <td><span class="deleted">Permanently deleted</span></td>
+    </tr>
+    <tr>
+      <td>Family group membership</td>
+      <td><span class="deleted">Removed immediately</span></td>
+    </tr>
+    <tr>
+      <td>Expense records you created</td>
+      <td><span class="deleted">Permanently deleted</span> if you are the sole family member;<br><span class="retained">Retained for remaining members</span> if others are in the group</td>
+    </tr>
+    <tr>
+      <td>Income records you created</td>
+      <td><span class="deleted">Permanently deleted</span> if you are the sole family member;<br><span class="retained">Retained for remaining members</span> if others are in the group</td>
+    </tr>
+    <tr>
+      <td>Investment records you created</td>
+      <td><span class="deleted">Permanently deleted</span> if you are the sole family member;<br><span class="retained">Retained for remaining members</span> if others are in the group</td>
+    </tr>
+    <tr>
+      <td>Custom categories (expense, income, investment)</td>
+      <td><span class="deleted">Deleted with family group</span> if you are the sole member;<br><span class="retained">Retained for remaining members</span> if others are in the group</td>
+    </tr>
+    <tr>
+      <td>Anonymous usage analytics</td>
+      <td><span class="retained">Retained in aggregate form</span> (not linked to your identity)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Retention Details</h2>
+
+<ul>
+  <li><strong>If you are the only member</strong> of your family group: all shared data (expenses, income, investments, categories, and the family group itself) is permanently deleted along with your account. No data is retained.</li>
+  <li><strong>If other members remain</strong> in your family group: your user profile and authentication are deleted, and you are removed from the family. The shared financial records remain accessible to the remaining family members since they contributed to and rely on that shared data.</li>
+  <li><strong>Deletion is immediate</strong>. There is no grace period or recovery option. Once confirmed, the action cannot be undone.</li>
+  <li><strong>Anonymous analytics data</strong> collected by Firebase Analytics is retained in aggregate form. This data is not linked to your identity and cannot be used to identify you.</li>
+</ul>
+
+<h2>Can't Access the App?</h2>
+
+<p>If you are unable to access the app to delete your account (for example, if you no longer have the app installed), you can request account deletion by emailing us:</p>
+
+<p><strong>Email:</strong> <a href="mailto:truecube@gmail.com">support@gmail.com</a></p>
+
+<p>Please include the email address associated with your account. We will verify your identity and process the deletion within 7 business days.</p>
+
+<div class="footer">
+  <p>Family Expense Tracker by TrueCube &mdash; <a href="privacy-policy.html">Privacy Policy</a> · <a href="terms.html">Terms of Service</a> · <a href="support.html">Support</a></p>
+</div>
+
+</body>
+</html>
