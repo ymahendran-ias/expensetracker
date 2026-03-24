@@ -178,16 +178,24 @@ git clone <repo-url>
 cd expensetracker
 ```
 
-### 2. Firebase setup
+### 2. Firebase config
 
-If starting from scratch (the project already has Firebase configured for project `expense-tracker-cc8ed`):
+Firebase API keys are kept out of source control. Copy the example config and fill in your values:
+
+```bash
+cp firebase_config.example.json firebase_config.json
+```
+
+Then edit `firebase_config.json` with your Firebase project keys. You can find these values in the [Firebase Console](https://console.firebase.google.com/) under Project Settings > General.
+
+Alternatively, if setting up from scratch, run:
 
 ```bash
 firebase login
 flutterfire configure
 ```
 
-This generates `lib/firebase_options.dart` and the platform-specific config files (`google-services.json`, `GoogleService-Info.plist`).
+Then copy the generated values from `lib/firebase_options.dart` into `firebase_config.json`.
 
 ### 3. Install dependencies
 
@@ -197,21 +205,23 @@ flutter pub get
 
 ### 4. Run the app
 
+All `flutter run` and `flutter build` commands require the config file flag:
+
 ```bash
 # List available devices
 flutter devices
 
 # Run on a specific platform
-flutter run -d chrome          # Web
-flutter run -d macos           # macOS desktop
-flutter run                    # Default connected devicopene
+flutter run --dart-define-from-file=firebase_config.json -d chrome    # Web
+flutter run --dart-define-from-file=firebase_config.json -d macos     # macOS
+flutter run --dart-define-from-file=firebase_config.json              # Default device
 
 # Run on iOS simulator
 open -a Simulator
-flutter run -d iPhone
+flutter run --dart-define-from-file=firebase_config.json -d iPhone
 
 # Run on Android emulator
-flutter run -d emulator-5554
+flutter run --dart-define-from-file=firebase_config.json -d emulator-5554
 ```
 
 ### 5. Firebase Console
@@ -285,7 +295,7 @@ In Xcode:
 ### 4. Build the release archive
 
 ```bash
-flutter build ipa
+flutter build ipa --dart-define-from-file=firebase_config.json
 ```
 
 This creates a `.ipa` file at `build/ios/ipa/`.
@@ -384,7 +394,7 @@ In `android/app/build.gradle.kts`:
 ### 5. Build the release bundle
 
 ```bash
-flutter build appbundle
+flutter build appbundle --dart-define-from-file=firebase_config.json
 ```
 
 This creates an `.aab` file at `build/app/outputs/bundle/release/app-release.aab`.
@@ -392,7 +402,7 @@ This creates an `.aab` file at `build/app/outputs/bundle/release/app-release.aab
 For APK instead (e.g., for direct distribution):
 
 ```bash
-flutter build apk --release
+flutter build apk --release --dart-define-from-file=firebase_config.json
 ```
 
 ### 6. Upload to Google Play Console
@@ -428,13 +438,13 @@ flutter analyze
 flutter test
 
 # Build for web
-flutter build web
+flutter build web --dart-define-from-file=firebase_config.json
 
 # Build iOS release
-flutter build ipa
+flutter build ipa --dart-define-from-file=firebase_config.json
 
 # Build Android release bundle
-flutter build appbundle
+flutter build appbundle --dart-define-from-file=firebase_config.json
 
 # Clean build artifacts
 flutter clean
