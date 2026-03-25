@@ -243,11 +243,13 @@ service cloud.firestore {
     }
 
     match /families/{familyId} {
-      allow read: if request.auth != null
-        && request.auth.uid in resource.data.memberIds;
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update: if request.auth != null
-        && request.auth.uid in resource.data.memberIds;
+        && (request.auth.uid in resource.data.memberIds
+            || request.auth.uid in request.resource.data.memberIds);
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.ownerId;
 
       match /expenses/{expenseId} {
         allow read, write: if request.auth != null
