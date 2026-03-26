@@ -50,64 +50,79 @@ class _HomeShellState extends State<HomeShell> {
                 ? family.investmentTypes
                 : defaultInvestmentTypes;
 
-        final pages = [
+        final hasFullAccess =
+            family?.hasFullAccess(widget.userId) ?? false;
+
+        // Clamp index so it stays valid when tabs change
+        final pages = <Widget>[
           ExpensesView(
             familyId: widget.familyId,
             userId: widget.userId,
             displayName: widget.displayName,
             categories: expCats,
           ),
-          IncomeView(
-            familyId: widget.familyId,
-            userId: widget.userId,
-            displayName: widget.displayName,
-            sources: incSources,
-          ),
-          InvestmentsView(
-            familyId: widget.familyId,
-            userId: widget.userId,
-            displayName: widget.displayName,
-            types: invTypes,
-          ),
+          if (hasFullAccess)
+            IncomeView(
+              familyId: widget.familyId,
+              userId: widget.userId,
+              displayName: widget.displayName,
+              sources: incSources,
+            ),
+          if (hasFullAccess)
+            InvestmentsView(
+              familyId: widget.familyId,
+              userId: widget.userId,
+              displayName: widget.displayName,
+              types: invTypes,
+            ),
           FamilyView(
             familyId: widget.familyId,
             userId: widget.userId,
           ),
-          DashboardView(familyId: widget.familyId),
+          DashboardView(
+            familyId: widget.familyId,
+            hasFullAccess: hasFullAccess,
+          ),
         ];
 
+        final destinations = <NavigationDestination>[
+          const NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Expenses',
+          ),
+          if (hasFullAccess)
+            const NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: Icon(Icons.account_balance_wallet),
+              label: 'Income',
+            ),
+          if (hasFullAccess)
+            const NavigationDestination(
+              icon: Icon(Icons.trending_up_outlined),
+              selectedIcon: Icon(Icons.trending_up),
+              label: 'Invest',
+            ),
+          const NavigationDestination(
+            icon: Icon(Icons.people_outlined),
+            selectedIcon: Icon(Icons.people),
+            label: 'Family',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Reports',
+          ),
+        ];
+
+        final safeIndex = _currentIndex.clamp(0, pages.length - 1);
+
         return Scaffold(
-          body: IndexedStack(index: _currentIndex, children: pages),
+          body: IndexedStack(index: safeIndex, children: pages),
           bottomNavigationBar: NavigationBar(
-            selectedIndex: _currentIndex,
+            selectedIndex: safeIndex,
             onDestinationSelected: (i) => setState(() => _currentIndex = i),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long),
-                label: 'Expenses',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.account_balance_wallet_outlined),
-                selectedIcon: Icon(Icons.account_balance_wallet),
-                label: 'Income',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.trending_up_outlined),
-                selectedIcon: Icon(Icons.trending_up),
-                label: 'Invest',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.people_outlined),
-                selectedIcon: Icon(Icons.people),
-                label: 'Family',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
-                label: 'Reports',
-              ),
-            ],
+            destinations: destinations,
           ),
         );
       },

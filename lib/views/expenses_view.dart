@@ -87,7 +87,9 @@ class _ExpensesViewState extends State<ExpensesView> {
             !widget.categories.contains(existing.category)
         ? [...widget.categories, existing.category]
         : widget.categories;
-    String selectedCategory = existing?.category ?? categories.first;
+    String selectedCategory = existing?.category ?? '';
+    final categoryCtl = TextEditingController(text: existing?.category ?? '');
+    bool showCategoryOptions = existing == null;
 
     showModalBottomSheet(
       context: context,
@@ -96,10 +98,16 @@ class _ExpensesViewState extends State<ExpensesView> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setSheetState) {
+          final query = categoryCtl.text.toLowerCase();
+          final filteredCategories = categories
+              .where((c) => c.toLowerCase().contains(query))
+              .toList();
+
           return Padding(
             padding: EdgeInsets.fromLTRB(
                 24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -128,19 +136,58 @@ class _ExpensesViewState extends State<ExpensesView> {
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedCategory,
-                  decoration: const InputDecoration(
+                TextField(
+                  controller: categoryCtl,
+                  decoration: InputDecoration(
                     labelText: 'Category',
-                    prefixIcon: Icon(Icons.category),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.category),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(showCategoryOptions
+                          ? Icons.arrow_drop_up
+                          : Icons.arrow_drop_down),
+                      onPressed: () => setSheetState(
+                          () => showCategoryOptions = !showCategoryOptions),
+                    ),
                   ),
-                  items: categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setSheetState(() => selectedCategory = v!),
+                  onChanged: (_) =>
+                      setSheetState(() => showCategoryOptions = true),
+                  onTap: () =>
+                      setSheetState(() => showCategoryOptions = true),
                 ),
+                if (showCategoryOptions && filteredCategories.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(ctx).colorScheme.outline),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: filteredCategories.length,
+                      itemBuilder: (_, i) {
+                        final cat = filteredCategories[i];
+                        return ListTile(
+                          dense: true,
+                          title: Text(cat),
+                          selected: cat == selectedCategory,
+                          onTap: () {
+                            categoryCtl.text = cat;
+                            categoryCtl.selection =
+                                TextSelection.collapsed(
+                                    offset: cat.length);
+                            setSheetState(() {
+                              selectedCategory = cat;
+                              showCategoryOptions = false;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountCtl,
@@ -168,13 +215,19 @@ class _ExpensesViewState extends State<ExpensesView> {
                   height: 48,
                   child: FilledButton(
                     onPressed: () async {
+                      final typedCat = categoryCtl.text.trim();
+                      final matchedCat = categories.cast<String?>().firstWhere(
+                          (c) => c!.toLowerCase() == typedCat.toLowerCase(),
+                          orElse: () => null);
+                      if (matchedCat != null) selectedCategory = matchedCat;
                       final amount = double.tryParse(amountCtl.text);
                       if (dateCtl.text.isEmpty ||
                           amount == null ||
-                          amount <= 0) {
+                          amount <= 0 ||
+                          !categories.contains(selectedCategory)) {
                         ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                             content: Text(
-                                'Please fill in date and a valid amount')));
+                                'Please fill in date, valid category, and amount')));
                         return;
                       }
                       try {
@@ -213,6 +266,7 @@ class _ExpensesViewState extends State<ExpensesView> {
                   ),
                 ),
               ],
+            ),
             ),
           );
         });

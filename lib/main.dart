@@ -13,12 +13,27 @@ import 'views/terms_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ExpenseTrackerApp());
+
+  String? initError;
+  try {
+    final options = DefaultFirebaseOptions.currentPlatform;
+    if (options.apiKey.isEmpty || options.projectId.isEmpty) {
+      initError =
+          'Firebase configuration is missing. '
+          'Build with: flutter run --dart-define-from-file=firebase_config.json';
+    } else {
+      await Firebase.initializeApp(options: options);
+    }
+  } catch (e) {
+    initError = 'Firebase initialization failed: $e';
+  }
+
+  runApp(ExpenseTrackerApp(initError: initError));
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
+  final String? initError;
+  const ExpenseTrackerApp({super.key, this.initError});
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +45,43 @@ class ExpenseTrackerApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFF2E7D32),
         brightness: Brightness.light,
       ),
-      home: const AuthGate(),
+      home: initError != null ? _ConfigErrorScreen(message: initError!) : const AuthGate(),
       routes: {
         '/login': (_) => const LoginView(),
         '/register': (_) => const RegisterView(),
         '/privacy-policy': (_) => const PrivacyPolicyView(),
         '/terms': (_) => const TermsView(),
       },
+    );
+  }
+}
+
+class _ConfigErrorScreen extends StatelessWidget {
+  final String message;
+  const _ConfigErrorScreen({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 64, color: theme.colorScheme.error),
+              const SizedBox(height: 16),
+              Text('Configuration Error',
+                  style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              Text(message,
+                  style: theme.textTheme.bodyMedium,
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

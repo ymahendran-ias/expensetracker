@@ -58,7 +58,9 @@ class _InvestmentsViewState extends State<InvestmentsView> {
             !widget.types.contains(existing.source)
         ? [...widget.types, existing.source]
         : widget.types;
-    String selectedType = existing?.source ?? types.first;
+    String selectedType = existing?.source ?? '';
+    final typeCtl = TextEditingController(text: existing?.source ?? '');
+    bool showTypeOptions = existing == null;
 
     showModalBottomSheet(
       context: context,
@@ -67,10 +69,16 @@ class _InvestmentsViewState extends State<InvestmentsView> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setSheetState) {
+          final query = typeCtl.text.toLowerCase();
+          final filteredTypes = types
+              .where((t) => t.toLowerCase().contains(query))
+              .toList();
+
           return Padding(
             padding: EdgeInsets.fromLTRB(
                 24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -102,19 +110,58 @@ class _InvestmentsViewState extends State<InvestmentsView> {
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedType,
-                  decoration: const InputDecoration(
+                TextField(
+                  controller: typeCtl,
+                  decoration: InputDecoration(
                     labelText: 'Investment Type',
-                    prefixIcon: Icon(Icons.trending_up),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.trending_up),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(showTypeOptions
+                          ? Icons.arrow_drop_up
+                          : Icons.arrow_drop_down),
+                      onPressed: () => setSheetState(
+                          () => showTypeOptions = !showTypeOptions),
+                    ),
                   ),
-                  items: types
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setSheetState(() => selectedType = v!),
+                  onChanged: (_) =>
+                      setSheetState(() => showTypeOptions = true),
+                  onTap: () =>
+                      setSheetState(() => showTypeOptions = true),
                 ),
+                if (showTypeOptions && filteredTypes.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(ctx).colorScheme.outline),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: filteredTypes.length,
+                      itemBuilder: (_, i) {
+                        final typ = filteredTypes[i];
+                        return ListTile(
+                          dense: true,
+                          title: Text(typ),
+                          selected: typ == selectedType,
+                          onTap: () {
+                            typeCtl.text = typ;
+                            typeCtl.selection =
+                                TextSelection.collapsed(
+                                    offset: typ.length);
+                            setSheetState(() {
+                              selectedType = typ;
+                              showTypeOptions = false;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountCtl,
@@ -142,13 +189,19 @@ class _InvestmentsViewState extends State<InvestmentsView> {
                   height: 48,
                   child: FilledButton(
                     onPressed: () async {
+                      final typedType = typeCtl.text.trim();
+                      final matchedType = types.cast<String?>().firstWhere(
+                          (t) => t!.toLowerCase() == typedType.toLowerCase(),
+                          orElse: () => null);
+                      if (matchedType != null) selectedType = matchedType;
                       final amount = double.tryParse(amountCtl.text);
                       if (dateCtl.text.isEmpty ||
                           amount == null ||
-                          amount <= 0) {
+                          amount <= 0 ||
+                          !types.contains(selectedType)) {
                         ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                             content: Text(
-                                'Please fill in date and a valid amount')));
+                                'Please fill in date, valid type, and amount')));
                         return;
                       }
                       try {
@@ -187,6 +240,7 @@ class _InvestmentsViewState extends State<InvestmentsView> {
                   ),
                 ),
               ],
+            ),
             ),
           );
         });

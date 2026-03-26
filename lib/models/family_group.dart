@@ -10,6 +10,7 @@ class FamilyGroup {
   final List<String> expenseCategories;
   final List<String> incomeSources;
   final List<String> investmentTypes;
+  final List<String> fullAccessMembers;
   final DateTime createdAt;
 
   FamilyGroup({
@@ -22,8 +23,12 @@ class FamilyGroup {
     this.expenseCategories = const [],
     this.incomeSources = const [],
     this.investmentTypes = const [],
+    this.fullAccessMembers = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  bool hasFullAccess(String userId) =>
+      userId == ownerId || fullAccessMembers.contains(userId);
 
   factory FamilyGroup.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -39,6 +44,8 @@ class FamilyGroup {
       incomeSources: List<String>.from(data['incomeSources'] ?? []),
       investmentTypes:
           List<String>.from(data['investmentTypes'] ?? []),
+      fullAccessMembers:
+          List<String>.from(data['fullAccessMembers'] ?? []),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -53,6 +60,7 @@ class FamilyGroup {
       'expenseCategories': expenseCategories,
       'incomeSources': incomeSources,
       'investmentTypes': investmentTypes,
+      'fullAccessMembers': fullAccessMembers,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }

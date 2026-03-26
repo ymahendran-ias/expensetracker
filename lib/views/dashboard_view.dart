@@ -35,7 +35,12 @@ Color _getCategoryColor(String category) {
 
 class DashboardView extends StatefulWidget {
   final String familyId;
-  const DashboardView({super.key, required this.familyId});
+  final bool hasFullAccess;
+  const DashboardView({
+    super.key,
+    required this.familyId,
+    this.hasFullAccess = true,
+  });
 
   @override
   State<DashboardView> createState() => _DashboardViewState();
@@ -47,6 +52,7 @@ class _DashboardViewState extends State<DashboardView> {
   final _currencyFormat =
       NumberFormat.currency(symbol: '\$', decimalDigits: 2);
   bool _showSensitive = false;
+  final Set<String> _hiddenCategories = {};
 
   @override
   void initState() {
@@ -92,6 +98,22 @@ class _DashboardViewState extends State<DashboardView> {
                   stream: _dbService.expensesRangeStream(
                       widget.familyId, _startOfRange(), _yearMonth),
                   builder: (context, trendSnap) {
+                    if (!widget.hasFullAccess) {
+                      if (expSnap.connectionState ==
+                              ConnectionState.waiting ||
+                          trendSnap.connectionState ==
+                              ConnectionState.waiting) {
+                        return const Center(
+                            child: CircularProgressIndicator());
+                      }
+                      return _buildContent(
+                        theme,
+                        expSnap.data ?? [],
+                        trendSnap.data ?? [],
+                        [],
+                        [],
+                      );
+                    }
                     return StreamBuilder<List<Income>>(
                       stream: _dbService.incomeStream(
                           widget.familyId, _yearMonth),
@@ -186,17 +208,28 @@ class _DashboardViewState extends State<DashboardView> {
       }
     }
 
-    // Top categories across all 6 months for trend lines
+    // All categories across both current month and 6-month range, sorted by total
     final Map<String, double> globalCatTotals = {};
     for (final entry in monthlyCatTotals.values) {
       for (final ce in entry.entries) {
         globalCatTotals[ce.key] = (globalCatTotals[ce.key] ?? 0) + ce.value;
       }
     }
-    final topCategories = (globalCatTotals.entries.toList()
+    final allCategories = (globalCatTotals.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value)))
-        .take(5)
         .map((e) => e.key)
+        .toList();
+    // Include current-month-only categories that might not appear in the range
+    for (final cat in catTotals.keys) {
+      if (!allCategories.contains(cat)) allCategories.add(cat);
+    }
+
+    // Filtered views based on user selection
+    final visibleCats = sortedCats
+        .where((e) => !_hiddenCategories.contains(e.key))
+        .toList();
+    final visibleTrendCategories = allCategories
+        .where((c) => !_hiddenCategories.contains(c))
         .toList();
 
     final hasExpenseData = currentExpenses.isNotEmpty;
@@ -238,39 +271,97 @@ class _DashboardViewState extends State<DashboardView> {
         ),
         const SizedBox(height: 24),
 
+        // ── Category Filter ──
+        if (hasExpenseData || hasTrendData) ...[
+          Row(
+            children: [
+              Text('Filter Categories',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              TextButton(
+                onPressed: () => setState(() {
+                  if (_hiddenCategories.isEmpty) {
+                    _hiddenCategories.addAll(allCategories);
+                  } else {
+                    _hiddenCategories.clear();
+                  }
+                }),
+                child: Text(
+                    _hiddenCategories.isEmpty ? 'Hide All' : 'Show All'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: allCategories.map((cat) {
+              final visible = !_hiddenCategories.contains(cat);
+              return FilterChip(
+                label: Text(cat, style: const TextStyle(fontSize: 12)),
+                selected: visible,
+                selectedColor:
+                    _getCategoryColor(cat).withAlpha(50),
+                checkmarkColor: _getCategoryColor(cat),
+                side: BorderSide(
+                    color: visible
+                        ? _getCategoryColor(cat)
+                        : theme.colorScheme.outline.withAlpha(80)),
+                onSelected: (selected) => setState(() {
+                  if (selected) {
+                    _hiddenCategories.remove(cat);
+                  } else {
+                    _hiddenCategories.add(cat);
+                  }
+                }),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
+
         // ── Pie Chart ──
-        if (hasExpenseData) ...[
+        if (hasExpenseData && visibleCats.isNotEmpty) ...[
           Text('Expenses by Category',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           SizedBox(
             height: 220,
-            child: PieChart(
-              PieChartData(
-                sections: sortedCats.map((entry) {
-                  final pct = entry.value / totalExpenses * 100;
-                  return PieChartSectionData(
-                    value: entry.value,
-                    title: '${pct.toStringAsFixed(0)}%',
-                    color: _getCategoryColor(entry.key),
-                    radius: 60,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  );
-                }).toList(),
-                centerSpaceRadius: 40,
-                sectionsSpace: 2,
-              ),
-            ),
+            child: Builder(builder: (context) {
+              final visibleTotal =
+                  visibleCats.fold(0.0, (sum, e) => sum + e.value);
+              return PieChart(
+                PieChartData(
+                  sections: visibleCats.map((entry) {
+                    final pct = visibleTotal > 0
+                        ? entry.value / visibleTotal * 100
+                        : 0.0;
+                    return PieChartSectionData(
+                      value: entry.value,
+                      title: '${pct.toStringAsFixed(0)}%',
+                      color: _getCategoryColor(entry.key),
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    );
+                  }).toList(),
+                  centerSpaceRadius: 40,
+                  sectionsSpace: 2,
+                ),
+              );
+            }),
           ),
           const SizedBox(height: 12),
-          ...sortedCats.map((entry) {
-            final pct = totalExpenses > 0
-                ? entry.value / totalExpenses * 100
+          ...visibleCats.map((entry) {
+            final visibleTotal =
+                visibleCats.fold(0.0, (sum, e) => sum + e.value);
+            final pct = visibleTotal > 0
+                ? entry.value / visibleTotal * 100
                 : 0.0;
             return ListTile(
               dense: true,
@@ -337,9 +428,12 @@ class _DashboardViewState extends State<DashboardView> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
-                        if (idx < 0 || idx >= months.length) {
+                        if (value != idx.toDouble() ||
+                            idx < 0 ||
+                            idx >= months.length) {
                           return const SizedBox.shrink();
                         }
                         final dt =
@@ -387,12 +481,12 @@ class _DashboardViewState extends State<DashboardView> {
         ],
 
         // ── Category Trends ──
-        if (hasTrendData && topCategories.isNotEmpty) ...[
+        if (hasTrendData && visibleTrendCategories.isNotEmpty) ...[
           Text('Category Trends',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('Top categories over 6 months',
+          Text('Selected categories over 6 months',
               style: theme.textTheme.bodySmall
                   ?.copyWith(color: theme.colorScheme.outline)),
           const SizedBox(height: 16),
@@ -403,7 +497,8 @@ class _DashboardViewState extends State<DashboardView> {
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipItems: (spots) => spots.map((spot) {
-                      final cat = topCategories[spot.barIndex];
+                      final cat =
+                          visibleTrendCategories[spot.barIndex];
                       return LineTooltipItem(
                         '$cat\n${_currencyFormat.format(spot.y)}',
                         TextStyle(
@@ -421,9 +516,12 @@ class _DashboardViewState extends State<DashboardView> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
-                        if (idx < 0 || idx >= months.length) {
+                        if (value != idx.toDouble() ||
+                            idx < 0 ||
+                            idx >= months.length) {
                           return const SizedBox.shrink();
                         }
                         final dt =
@@ -445,7 +543,7 @@ class _DashboardViewState extends State<DashboardView> {
                   rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false)),
                 ),
-                lineBarsData: topCategories.map((cat) {
+                lineBarsData: visibleTrendCategories.map((cat) {
                   final color = _getCategoryColor(cat);
                   return LineChartBarData(
                     spots: List.generate(months.length, (i) {
@@ -469,7 +567,7 @@ class _DashboardViewState extends State<DashboardView> {
           Wrap(
             spacing: 12,
             runSpacing: 4,
-            children: topCategories.map((cat) {
+            children: visibleTrendCategories.map((cat) {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -490,7 +588,10 @@ class _DashboardViewState extends State<DashboardView> {
         ],
 
         // ── Empty State ──
-        if (!hasExpenseData && incomes.isEmpty && investments.isEmpty)
+        if (!hasExpenseData &&
+            (widget.hasFullAccess
+                ? incomes.isEmpty && investments.isEmpty
+                : true))
           Padding(
             padding: const EdgeInsets.only(top: 48),
             child: Column(
@@ -509,10 +610,11 @@ class _DashboardViewState extends State<DashboardView> {
           ),
 
         // ── Sensitive: Income, Investments, Net Savings ──
-        if (incomes.isNotEmpty ||
-            investments.isNotEmpty ||
-            totalIncome > 0 ||
-            totalInvestments > 0) ...[
+        if (widget.hasFullAccess &&
+            (incomes.isNotEmpty ||
+                investments.isNotEmpty ||
+                totalIncome > 0 ||
+                totalInvestments > 0)) ...[
           const Divider(height: 32),
           InkWell(
             onTap: () =>

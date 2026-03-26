@@ -58,6 +58,7 @@ class DatabaseService {
       'expenseCategories': defaultExpenseCategories,
       'incomeSources': defaultIncomeSources,
       'investmentTypes': defaultInvestmentTypes,
+      'fullAccessMembers': <String>[],
       'createdAt': FieldValue.serverTimestamp(),
     });
     await _db
@@ -117,6 +118,17 @@ class DatabaseService {
     if (data.isNotEmpty) {
       await _db.collection('families').doc(familyId).update(data);
     }
+  }
+
+  // ──── Member Access Operations ────
+
+  Future<void> toggleFullAccess(
+      String familyId, String memberId, bool grant) async {
+    await _db.collection('families').doc(familyId).update({
+      'fullAccessMembers': grant
+          ? FieldValue.arrayUnion([memberId])
+          : FieldValue.arrayRemove([memberId]),
+    });
   }
 
   // ──── Expense Operations ────

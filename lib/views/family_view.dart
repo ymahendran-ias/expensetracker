@@ -396,10 +396,22 @@ class _FamilyViewState extends State<FamilyView> {
                       Text('Members',
                           style: theme.textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Owner controls who can view Income & Investments',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
                       const SizedBox(height: 12),
                       ...family.memberNames.entries.map((entry) {
-                        final isOwner = entry.key == family.ownerId;
-                        final isCurrentUser = entry.key == widget.userId;
+                        final memberId = entry.key;
+                        final isOwner = memberId == family.ownerId;
+                        final isCurrentUser = memberId == widget.userId;
+                        final memberHasAccess =
+                            family.hasFullAccess(memberId);
+                        final currentUserIsOwner =
+                            widget.userId == family.ownerId;
+
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor:
@@ -419,6 +431,17 @@ class _FamilyViewState extends State<FamilyView> {
                             style: const TextStyle(
                                 fontWeight: FontWeight.w500),
                           ),
+                          subtitle: isOwner
+                              ? null
+                              : Text(
+                                  memberHasAccess
+                                      ? 'Full access'
+                                      : 'Expenses only',
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(
+                                          color: theme.colorScheme
+                                              .onSurfaceVariant),
+                                ),
                           trailing: isOwner
                               ? Chip(
                                   label: const Text('Owner'),
@@ -429,7 +452,23 @@ class _FamilyViewState extends State<FamilyView> {
                                           .colorScheme.onPrimaryContainer,
                                       fontSize: 12),
                                 )
-                              : null,
+                              : currentUserIsOwner
+                                  ? Switch(
+                                      value: memberHasAccess,
+                                      onChanged: (val) =>
+                                          _dbService.toggleFullAccess(
+                                              widget.familyId,
+                                              memberId,
+                                              val),
+                                    )
+                                  : Icon(
+                                      memberHasAccess
+                                          ? Icons.lock_open
+                                          : Icons.lock_outline,
+                                      size: 20,
+                                      color: theme
+                                          .colorScheme.onSurfaceVariant,
+                                    ),
                         );
                       }),
                     ],

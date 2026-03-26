@@ -57,7 +57,9 @@ class _IncomeViewState extends State<IncomeView> {
             !widget.sources.contains(existing.source)
         ? [...widget.sources, existing.source]
         : widget.sources;
-    String selectedSource = existing?.source ?? sources.first;
+    String selectedSource = existing?.source ?? '';
+    final sourceCtl = TextEditingController(text: existing?.source ?? '');
+    bool showSourceOptions = existing == null;
 
     showModalBottomSheet(
       context: context,
@@ -66,10 +68,16 @@ class _IncomeViewState extends State<IncomeView> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setSheetState) {
+          final query = sourceCtl.text.toLowerCase();
+          final filteredSources = sources
+              .where((s) => s.toLowerCase().contains(query))
+              .toList();
+
           return Padding(
             padding: EdgeInsets.fromLTRB(
                 24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -98,19 +106,58 @@ class _IncomeViewState extends State<IncomeView> {
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedSource,
-                  decoration: const InputDecoration(
+                TextField(
+                  controller: sourceCtl,
+                  decoration: InputDecoration(
                     labelText: 'Source',
-                    prefixIcon: Icon(Icons.account_balance),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.account_balance),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(showSourceOptions
+                          ? Icons.arrow_drop_up
+                          : Icons.arrow_drop_down),
+                      onPressed: () => setSheetState(
+                          () => showSourceOptions = !showSourceOptions),
+                    ),
                   ),
-                  items: sources
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setSheetState(() => selectedSource = v!),
+                  onChanged: (_) =>
+                      setSheetState(() => showSourceOptions = true),
+                  onTap: () =>
+                      setSheetState(() => showSourceOptions = true),
                 ),
+                if (showSourceOptions && filteredSources.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Theme.of(ctx).colorScheme.outline),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: filteredSources.length,
+                      itemBuilder: (_, i) {
+                        final src = filteredSources[i];
+                        return ListTile(
+                          dense: true,
+                          title: Text(src),
+                          selected: src == selectedSource,
+                          onTap: () {
+                            sourceCtl.text = src;
+                            sourceCtl.selection =
+                                TextSelection.collapsed(
+                                    offset: src.length);
+                            setSheetState(() {
+                              selectedSource = src;
+                              showSourceOptions = false;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: amountCtl,
@@ -138,13 +185,19 @@ class _IncomeViewState extends State<IncomeView> {
                   height: 48,
                   child: FilledButton(
                     onPressed: () async {
+                      final typedSrc = sourceCtl.text.trim();
+                      final matchedSrc = sources.cast<String?>().firstWhere(
+                          (s) => s!.toLowerCase() == typedSrc.toLowerCase(),
+                          orElse: () => null);
+                      if (matchedSrc != null) selectedSource = matchedSrc;
                       final amount = double.tryParse(amountCtl.text);
                       if (dateCtl.text.isEmpty ||
                           amount == null ||
-                          amount <= 0) {
+                          amount <= 0 ||
+                          !sources.contains(selectedSource)) {
                         ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                             content: Text(
-                                'Please fill in date and a valid amount')));
+                                'Please fill in date, valid source, and amount')));
                         return;
                       }
                       try {
@@ -182,6 +235,7 @@ class _IncomeViewState extends State<IncomeView> {
                   ),
                 ),
               ],
+            ),
             ),
           );
         });
