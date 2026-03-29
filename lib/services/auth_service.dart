@@ -10,6 +10,10 @@ class AuthService {
     return _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
+  Future<UserCredential> signInAnonymously() {
+    return _auth.signInAnonymously();
+  }
+
   Future<UserCredential> register(String email, String password) {
     return _auth.createUserWithEmailAndPassword(
       email: email,

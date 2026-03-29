@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -21,6 +22,8 @@ class _LoginViewState extends State<LoginView> {
   bool _loading = false;
   bool _obscurePassword = true;
   String _versionInfo = '';
+  bool _demoEnabled = false;
+  String _demoFamilyId = '';
 
   @override
   void initState() {
@@ -30,6 +33,60 @@ class _LoginViewState extends State<LoginView> {
         setState(() => _versionInfo = 'v${info.version} (${info.buildNumber})');
       }
     });
+    _loadDemoConfig();
+  }
+
+  Future<void> _loadDemoConfig() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('config')
+          .doc('app')
+          .get();
+      if (!doc.exists || !mounted) return;
+      final data = doc.data()!;
+      setState(() {
+        _demoEnabled = data['demoEnabled'] == true;
+        _demoFamilyId = (data['demoFamilyId'] as String?) ?? '';
+      });
+    } catch (_) {
+      // Config not available — demo stays hidden
+    }
+  }
+
+  Future<void> _tryDemo() async {
+    if (_demoFamilyId.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      final credential = await _authService.signInAnonymously()
+          .timeout(const Duration(seconds: 20));
+      final user = credential.user!;
+      final db = FirebaseFirestore.instance;
+
+      // Create a user profile pointing to the demo family
+      await db.collection('users').doc(user.uid).set({
+        'email': '',
+        'displayName': 'Demo User',
+        'familyId': _demoFamilyId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Add this anonymous user to the demo family's member list
+      await db.collection('families').doc(_demoFamilyId).update({
+        'memberIds': FieldValue.arrayUnion([user.uid]),
+        'memberNames.${user.uid}': 'Demo User',
+      });
+    } on TimeoutException {
+      _showErrorDialog(
+        'Connection Timed Out',
+        'Unable to reach the server. Please check your internet connection.',
+      );
+    } on FirebaseAuthException catch (e) {
+      _showErrorDialog('Demo Error', 'Could not start demo: ${e.message}');
+    } catch (e) {
+      _showErrorDialog('Demo Error', '$e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -300,6 +357,32 @@ class _LoginViewState extends State<LoginView> {
                             child: const Text(
                                 "Don't have an account? Register"),
                           ),
+                          if (_demoEnabled &&
+                              _demoFamilyId.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Divider(),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  textStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                onPressed: _loading ? null : _tryDemo,
+                                icon: const Icon(Icons.play_circle_outline),
+                                label: const Text('Try Demo'),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Explore the app with sample data',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.outline),
+                            ),
+                          ],
                           const SizedBox(height: 24),
                           if (_versionInfo.isNotEmpty)
                             Text(
