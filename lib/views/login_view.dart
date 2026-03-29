@@ -70,9 +70,10 @@ class _LoginViewState extends State<LoginView> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Add this anonymous user to the demo family's member list
+      // Add this anonymous user to the demo family with full access
       await db.collection('families').doc(_demoFamilyId).update({
         'memberIds': FieldValue.arrayUnion([user.uid]),
+        'fullAccessMembers': FieldValue.arrayUnion([user.uid]),
         'memberNames.${user.uid}': 'Demo User',
       });
     } on TimeoutException {

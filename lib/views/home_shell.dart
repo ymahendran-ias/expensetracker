@@ -30,6 +30,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
   final _dbService = DatabaseService();
+  bool _hasFullAccess = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +38,12 @@ class _HomeShellState extends State<HomeShell> {
       stream: _dbService.familyStream(widget.familyId),
       builder: (context, snapshot) {
         final family = snapshot.data;
+
+        // Only update access when we have real data to avoid flicker
+        if (family != null) {
+          _hasFullAccess = family.hasFullAccess(widget.userId);
+        }
+
         final expCats =
             family != null && family.expenseCategories.isNotEmpty
                 ? family.expenseCategories
@@ -50,8 +57,7 @@ class _HomeShellState extends State<HomeShell> {
                 ? family.investmentTypes
                 : defaultInvestmentTypes;
 
-        final hasFullAccess =
-            family?.hasFullAccess(widget.userId) ?? false;
+        final hasFullAccess = _hasFullAccess;
 
         // Clamp index so it stays valid when tabs change
         final pages = <Widget>[
